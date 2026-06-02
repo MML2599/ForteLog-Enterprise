@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MilLog - Painel de Controle</title>
+    <!-- CSS Puro Embutido Corrigido - Funciona 100% Offline Sem Erros -->
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { background-color: #111827; color: #f3f4f6; min-height: 100vh; display: flex; flex-direction: column; }
+        .flex { display: flex; }
+        .hidden { display: none !important; }
+        
+        /* Login */
+        .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .login-card { background: #1f2937; padding: 2rem; border: 1px solid #374151; width: 100%; max-width: 400px; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+        .text-center { text-align: center; margin-bottom: 2rem; }
+        .title { font-size: 1.5rem; font-weight: bold; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+        .subtitle { color: #9ca3af; font-size: 0.875rem; }
+        
+        /* Formulários */
+        .form-group { margin-bottom: 1.25rem; }
+        label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #9ca3af; margin-bottom: 0.5rem; }
+        input, select { width: 100%; background: #111827; border: 1px solid #374151; border-radius: 4px; padding: 0.75rem; color: #fff; outline: none; transition: border 0.2s; font-size: 0.875rem; }
+        input:focus, select:focus { border-color: #10b981; }
+        button { width: 100%; background: #059669; color: #fff; font-weight: 600; padding: 0.75rem; border: none; border-radius: 4px; cursor: pointer; transition: background 0.2s; font-size: 0.875rem; }
+        button:hover { background: #10b981; }
+        
+        /* Dashboard */
+        header { background: #1f2937; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #374151; }
+        .header-brand { font-weight: bold; font-size: 1.125rem; color: #fff; display: flex; align-items: center; gap: 0.5rem; }
+        .header-actions { display: flex; align-items: center; gap: 1rem; }
+        #user-badge { background: #374151; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
+        #logout-btn { background: none; color: #9ca3af; font-size: 0.875rem; width: auto; padding: 0; }
+        #logout-btn:hover { color: #f87171; background: none; }
+        
+        #sync-indicator { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-family: monospace; border: 1px solid rgba(52,211,153,0.2); background: rgba(52,211,153,0.1); color: #34d399; margin-left: 10px; }
+        
+        main { flex: 1; padding: 1.5rem; max-width: 1280px; width: 100%; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+        @media (min-width: 1024px) { main { grid-template-columns: 1fr 2fr; } }
+        
+        .card { background: #1f2937; padding: 1.5rem; border-radius: 8px; border: 1px solid #374151; height: max-content; }
+        .card h2 { font-size: 1.125rem; font-weight: bold; margin-bottom: 1rem; color: #fff; }
+        
+        /* Tabelas e Logs */
+        .overflow { overflow-x: auto; width: 100%; }
+        table { width: 100%; text-align: left; font-size: 0.875rem; border-collapse: collapse; }
+        thead { background: #111827; font-size: 0.75rem; text-transform: uppercase; color: #9ca3af; }
+        th, td { padding: 0.75rem; }
+        tbody tr { border-bottom: 1px solid rgba(55,65,81,0.5); transition: background 0.2s; }
+        tbody tr:hover { background: rgba(55,65,81,0.2); }
+        
+        .badge { padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; border: 1px solid transparent; }
+        .badge-op { background: rgba(16,185,129,0.1); color: #34d399; border-color: rgba(16,185,129,0.2); }
+        .badge-maint { background: rgba(245,158,11,0.1); color: #fbbf24; border-color: rgba(245,158,11,0.2); }
+        .badge-res { background: rgba(239,68,68,0.1); color: #f87171; border-color: rgba(239,68,68,0.2); }
+        
+        .logs-box { display: flex; flex-direction: column; gap: 0.75rem; max-height: 240px; overflow-y: auto; padding-right: 4px; }
+        .log-item { background: rgba(17,24,39,0.4); padding: 0.75rem; border-radius: 4px; border: 1px solid rgba(55,65,81,0.5); font-size: 0.75rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+        .log-main { width: 100%; }
+        .log-title { color: #e5e7eb; font-weight: 600; margin-bottom: 2px; }
+        .log-details { color: #9ca3af; font-size: 11px; }
+        .log-date { color: #6b7280; font-family: monospace; font-size: 10px; display: block; margin-top: 4px; }
+        .log-user { background: #2d3748; padding: 2px 6px; border-radius: 4px; color: #9ca3af; font-family: monospace; white-space: nowrap; }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE LOGIN -->
+    <div id="login-screen" class="login-container">
+        <div class="login-card">
+            <div class="text-center">
+                <div class="title">MilLog Enterprise</div>
+                <div class="subtitle">Autenticação de Segurança</div>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Usuário</label>
+                    <input type="text" id="username" value="miranda_admin" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="password" value="123" required>
+                </div>
+                <button type="submit">Acessar Sistema</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAINEL PRINCIPAL (DASHBOARD) -->
+    <div id="main-dashboard" class="hidden" style="min-height: 100vh; display: flex; flex-direction: column; flex: 1;">
+        <!-- Header -->
+        <header>
+            <div class="header-brand">
+                <span>ForteLog Enterprise </span>
+                <span id="sync-indicator">Sincronizado</span>
+            </div>
+            <div class="header-actions">
+                <span id="user-badge"></span>
+                <button id="logout-btn">Sair</button>
+            </div>
+        </header>
+
+        <!-- Corpo Principal -->
+        <main>
+            <!-- Cadastro de Ativos -->
+            <div class="card">
+                <h2>Registrar Novo Ativo</h2>
+                <form id="asset-form">
+                    <div class="form-group">
+                        <label>Nome do Equipamento</label>
+                        <input type="text" id="asset-name" placeholder="Ex: Notebook Lenovo ThinkPad" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Número de Série</label>
+                        <input type="text" id="asset-serial" placeholder="Ex: BR-MIL-1020" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Status Operacional</label>
+                        <select id="asset-status">
+                            <option value="Operacional">Operacional</option>
+                            <option value="Em Manutenção">Em Manutenção</option>
+                            <option value="Baixado / Reserva">Baixado / Reserva</option>
+                        </select>
+                    </div>
+                    <button type="submit">Salvar no Inventário</button>
+                </form>
+            </div>
+
+            <!-- Listagens -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- Tabela de Inventário -->
+                <div class="card">
+                    <h2>Inventário de Ativos Críticos</h2>
+                    <div class="overflow">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Equipamento</th>
+                                    <th>Nº de Série</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="assets-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Trilha de Auditoria -->
+                <div class="card">
+                    <h2>Logs de Auditoria e Compliance</h2>
+                    <div id="logs-container" class="logs-box"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- INTEGRAÇÃO COM A API -->
+    <script>
+        const BASE_URL = "http://127.0.0.1:8000"; 
+        let token = "";
+        let pollingInterval = null;
+
+        const loginScreen = document.getElementById("login-screen");
+        const mainDashboard = document.getElementById("main-dashboard");
+        const userBadge = document.getElementById("user-badge");
+        const assetsTableBody = document.getElementById("assets-table-body");
+        const logsContainer = document.getElementById("logs-container");
+        const syncIndicator = document.getElementById("sync-indicator");
+
+        // LOGIN
+        document.getElementById("login-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new URLSearchParams();
+            formData.append("username", document.getElementById("username").value);
+            formData.append("password", document.getElementById("password").value);
+
+            try {
+                const response = await fetch(`${BASE_URL}/token`, { method: "POST", body: formData });
+                if (response.ok) {
+                    const data = await response.json();
+                    token = data.access_token;
+                    localStorage.setItem("mil_log_token", token);
+                    userBadge.textContent = document.getElementById("username").value;
+                    
+                    loginScreen.style.display = "none";
+                    mainDashboard.classList.remove("hidden");
+                    
+                    loadDashboardData();
+                    startPolling();
+                } else {
+                    alert("Falha na autenticação. Verifique suas credenciais.");
+                }
+            } catch (error) {
+                alert("Erro de conexão com a API na porta 8000.");
+            }
+        });
+
+        // LOGOUT
+        document.getElementById("logout-btn").addEventListener("click", () => {
+            token = "";
+            localStorage.removeItem("mil_log_token");
+            stopPolling();
+            mainDashboard.classList.add("hidden");
+            loginScreen.style.display = "flex";
+            assetsTableBody.innerHTML = "";
+            logsContainer.innerHTML = "";
+        });
+
+        // POLLING
+        function startPolling() {
+            stopPolling();
+            pollingInterval = setInterval(() => {
+                syncIndicator.style.borderColor = "rgba(245,158,11,0.2)";
+                syncIndicator.style.background = "rgba(245,158,11,0.1)";
+                syncIndicator.style.color = "#fbbf24";
+                syncIndicator.textContent = "Atualizando...";
+                loadDashboardData();
+            }, 5000);
+        }
+
+        function stopPolling() {
+            if (pollingInterval) { 
+                clearInterval(pollingInterval); 
+                pollingInterval = null; 
+            }
+        }
+
+        // FETCH DATA
+        async function loadDashboardData() {
+            if (!token) return;
+            const headers = { "Authorization": `Bearer ${token}` };
+
+            try {
+                const resAssets = await fetch(`${BASE_URL}/assets`, { headers });
+                if (resAssets.ok) renderAssets(await resAssets.json());
+
+                const resLogs = await fetch(`${BASE_URL}/logs`, { headers });
+                if (resLogs.ok) renderLogs(await resLogs.json());
+                
+                syncIndicator.style.borderColor = "rgba(16,185,129,0.2)";
+                syncIndicator.style.background = "rgba(16,185,129,0.1)";
+                syncIndicator.style.color = "#34d399";
+                syncIndicator.textContent = "Sincronizado";
+            } catch (error) {
+                syncIndicator.style.borderColor = "rgba(239,68,68,0.2)";
+                syncIndicator.style.background = "rgba(239,68,68,0.1)";
+                syncIndicator.style.color = "#f87171";
+                syncIndicator.textContent = "Erro Conexão";
+            }
+        }
+
+        function renderAssets(assets) {
+            assetsTableBody.innerHTML = "";
+            if (!assets || assets.length === 0) {
+                assetsTableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#6b7280;">Nenhum ativo registrado.</td></tr>`;
+                return;
+            }
+            assets.forEach(asset => {
+                let badgeClass = "badge-op";
+                if (asset.status === "Em Manutenção") badgeClass = "badge-maint";
+                if (asset.status === "Baixado / Reserva") badgeClass = "badge-res";
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td style="font-weight:600;color:#fff;">${asset.name}</td>
+                    <td style="color:#9ca3af;font-family:monospace;">${asset.serial_number}</td>
+                    <td><span class="badge ${badgeClass}">${asset.status}</span></td>
+                `;
+                assetsTableBody.appendChild(tr);
+            });
+        }
+
+        function renderLogs(logs) {
+            logsContainer.innerHTML = "";
+            if (!logs || logs.length === 0) {
+                logsContainer.innerHTML = `<p style="font-size:12px;color:#6b7280;text-align:center;">Nenhum log encontrado.</p>`;
+                return;
+            }
+            logs.forEach(log => {
+                const dateStr = new Date(log.created_at).toLocaleString('pt-BR');
+                const div = document.createElement("div");
+                div.className = "log-item";
+                div.innerHTML = `
+                    <div class="log-main">
+                        <div class="log-title">${log.action}</div>
+                        <div class="log-details">${log.details || ""}</div>
+                        <span class="log-date">${dateStr}</span>
+                    </div>
+                    <span class="log-user">${log.user}</span>
+                `;
+                logsContainer.appendChild(div);
+            });
+        }
+
+        // CADASTRO
+        document.getElementById("asset-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (!token) return;
+
+            const assetData = {
+                name: document.getElementById("asset-name").value,
+                serial_number: document.getElementById("asset-serial").value,
+                status: document.getElementById("asset-status").value
+            };
+
+            try {
+                const response = await fetch(`${BASE_URL}/assets`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                    body: JSON.stringify(assetData)
+                });
+
+                if (response.status === 201 || response.ok) {
+                    alert("Ativo registrado com sucesso!");
+                    document.getElementById("asset-form").reset();
+                    loadDashboardData();
+                } else if (response.status === 400) {
+                    alert("Erro: Número de série já cadastrado.");
+                } else {
+                    alert("Falha ao registrar ativo.");
+                }
+            } catch (error) {
+                alert("Erro ao conectar ao servidor.");
+            }
+        });
+    </script>
+</body>
+</html>
